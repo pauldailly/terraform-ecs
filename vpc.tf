@@ -34,12 +34,10 @@ resource "aws_subnet" "public-subnet-2" {
   }
 }
 
-# Subnets
 resource "aws_subnet" "private-subnet-1" {
-  vpc_id                  = "${aws_vpc.ecs-cluster.id}"
-  cidr_block              = "10.240.20.0/24"
-  map_public_ip_on_launch = "true"
-  availability_zone       = "${var.AWS_REGION}a"
+  vpc_id            = "${aws_vpc.ecs-cluster.id}"
+  cidr_block        = "10.240.20.0/24"
+  availability_zone = "${var.AWS_REGION}a"
 
   tags {
     Name = "private-subnet-1"
@@ -47,10 +45,9 @@ resource "aws_subnet" "private-subnet-1" {
 }
 
 resource "aws_subnet" "private-subnet-2" {
-  vpc_id                  = "${aws_vpc.ecs-cluster.id}"
-  cidr_block              = "10.240.21.0/24"
-  map_public_ip_on_launch = "true"
-  availability_zone       = "${var.AWS_REGION}b"
+  vpc_id            = "${aws_vpc.ecs-cluster.id}"
+  cidr_block        = "10.240.21.0/24"
+  availability_zone = "${var.AWS_REGION}b"
 
   tags {
     Name = "private-subnet-2"
@@ -66,25 +63,25 @@ resource "aws_internet_gateway" "internet-gateway" {
   }
 }
 
-# NAT GW
-resource "aws_eip" "nat-1-eip" {
-  vpc = true
+# NAT gateway
+resource "aws_eip" "nat-gw-eip1" {
+  vpc        = true
+  depends_on = ["aws_internet_gateway.internet-gateway"]
 }
 
-resource "aws_nat_gateway" "nat-gateway-1" {
-  allocation_id = "${aws_eip.nat-1-eip.id}"
+resource "aws_eip" "nat-gw-eip2" {
+  vpc        = true
+  depends_on = ["aws_internet_gateway.internet-gateway"]
+}
+
+resource "aws_nat_gateway" "nat-gw-1" {
+  allocation_id = "${aws_eip.nat-gw-eip1.id}"
   subnet_id     = "${aws_subnet.public-subnet-1.id}"
-  depends_on    = ["aws_internet_gateway.internet-gateway"]
 }
 
-resource "aws_eip" "nat-2-eip" {
-  vpc = true
-}
-
-resource "aws_nat_gateway" "nat-gateway-2" {
-  allocation_id = "${aws_eip.nat-2-eip.id}"
+resource "aws_nat_gateway" "nat-gw-2" {
+  allocation_id = "${aws_eip.nat-gw-eip2.id}"
   subnet_id     = "${aws_subnet.public-subnet-2.id}"
-  depends_on    = ["aws_internet_gateway.internet-gateway"]
 }
 
 #Route table
@@ -101,23 +98,22 @@ resource "aws_route_table" "public" {
   }
 }
 
-resource "aws_route_table_association" "public-subnet-1" {
+resource "aws_route_table_association" "public-subnet-1-association" {
   subnet_id      = "${aws_subnet.public-subnet-1.id}"
   route_table_id = "${aws_route_table.public.id}"
 }
 
-resource "aws_route_table_association" "public-subnet-2" {
+resource "aws_route_table_association" "public-subnet-2-association" {
   subnet_id      = "${aws_subnet.public-subnet-2.id}"
   route_table_id = "${aws_route_table.public.id}"
 }
 
-#Route table
 resource "aws_route_table" "private-1" {
   vpc_id = "${aws_vpc.ecs-cluster.id}"
 
   route {
     cidr_block     = "0.0.0.0/0"
-    nat_gateway_id = "${aws_nat_gateway.nat-gateway-1.id}"
+    nat_gateway_id = "${aws_nat_gateway.nat-gw-1.id}"
   }
 
   tags {
@@ -125,7 +121,7 @@ resource "aws_route_table" "private-1" {
   }
 }
 
-resource "aws_route_table_association" "private-subnet-1" {
+resource "aws_route_table_association" "private-subnet-1-association" {
   subnet_id      = "${aws_subnet.private-subnet-1.id}"
   route_table_id = "${aws_route_table.private-1.id}"
 }
@@ -135,7 +131,7 @@ resource "aws_route_table" "private-2" {
 
   route {
     cidr_block     = "0.0.0.0/0"
-    nat_gateway_id = "${aws_nat_gateway.nat-gateway-2.id}"
+    nat_gateway_id = "${aws_nat_gateway.nat-gw-2.id}"
   }
 
   tags {
@@ -143,7 +139,7 @@ resource "aws_route_table" "private-2" {
   }
 }
 
-resource "aws_route_table_association" "private-subnet-2" {
+resource "aws_route_table_association" "private-subnet-2-association" {
   subnet_id      = "${aws_subnet.private-subnet-2.id}"
   route_table_id = "${aws_route_table.private-2.id}"
 }
