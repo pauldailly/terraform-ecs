@@ -1,0 +1,15 @@
+[
+  {
+      "memory": 128,
+      "portMappings": [
+        {
+          "containerPort": 80,
+          "protocol": "tcp"
+        }
+      ],
+      "essential": true,
+      "name": "nginx-container2",
+      "image": "nginx",
+      "cpu": 512
+    }
+]

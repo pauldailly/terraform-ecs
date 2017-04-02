@@ -11,9 +11,9 @@ resource "aws_security_group" "bastion-host-sg" {
   }
 
   egress {
-    from_port   = "22"
-    to_port     = "22"
-    protocol    = "tcp"
+    from_port   = "0"
+    to_port     = "0"
+    protocol    = "-1"
     cidr_blocks = ["10.240.0.0/16"]
   }
 
@@ -28,6 +28,13 @@ resource "aws_security_group" "ecs-lb-sg" {
   vpc_id      = "${aws_vpc.ecs-cluster.id}"
 
   ingress {
+    from_port   = 0
+    to_port     = 0
+    protocol    = "-1"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  egress {
     from_port   = 0
     to_port     = 0
     protocol    = "-1"
@@ -52,9 +59,9 @@ resource "aws_security_group" "ecs-host-sg" {
   }
 
   ingress {
-    from_port       = 22
-    to_port         = 22
-    protocol        = "tcp"
+    from_port       = 0
+    to_port         = 0
+    protocol        = "-1"
     security_groups = ["${aws_security_group.bastion-host-sg.id}"]
   }
 
